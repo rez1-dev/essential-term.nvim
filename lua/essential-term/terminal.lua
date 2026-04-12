@@ -101,16 +101,30 @@ function M.create(name)
   term.job_id = job_id
   state.active_id = term.id
 
-  local esc = config.options.escape_key
-  if esc and esc ~= "" then
-    vim.keymap.set("t", esc, function()
+  local exit_key = config.options.exit_term_mode_key
+  if exit_key and exit_key ~= "" then
+    vim.keymap.set("t", exit_key, function()
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true), "n", false)
+    end, { buffer = bufnr, silent = true, desc = "Exit terminal mode" })
+  end
+
+  local close_key = config.options.close_key
+  if close_key and close_key ~= "" then
+    -- from terminal mode: exit insert first, then hide
+    vim.keymap.set("t", close_key, function()
       vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true), "n", false)
       vim.schedule(function()
         M.hide(term.id)
         ui.hide_sidebar()
         ui.hide_tabline()
       end)
-    end, { buffer = bufnr, silent = true, desc = "Exit terminal mode and hide" })
+    end, { buffer = bufnr, silent = true, desc = "Close terminal window from insert mode" })
+    -- from normal mode inside the terminal buffer
+    vim.keymap.set("n", close_key, function()
+      M.hide(term.id)
+      ui.hide_sidebar()
+      ui.hide_tabline()
+    end, { buffer = bufnr, silent = true, desc = "Close terminal window" })
   end
 
   if config.options.start_in_insert then
